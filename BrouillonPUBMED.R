@@ -2,38 +2,51 @@ library(XML)
 library(easyPubMed)
 library(ggplot2)
 
-############### PART 1: extraction des textes
+############### PART 1: Information extraction ###############
 
-##### Option 1: 698 documents via une requete
-Querry_String <- "mouse"
-Ids <- get_pubmed_ids(Querry_String)  
+## Dataset importation
+#--------------------
+# Option 1: 698 documents via une requete
+#----------
+Querry_String <- "AIDS"
+Ids <- get_pubmed_ids(Querry_String)
 papers <- fetch_pubmed_data(Ids)
 
-##### Option 2: 52349 documents via importation du fichier xml.
-# papers <- xmlParse(file = "/home/francois/Desktop/pubmed18n0924.xml")
+# Option 2: 52349 documents via importation du fichier xml.
+#----------
+# papers <- xmlParse(file = "/home/francois/Documents/Projet_Text_mining/pubmed18n0924.xml")
 
 
-# Preprocessing des abstracts
-#---------------------------
-library(stringr)
+## Information Extraction from dataset ("papers")
+xmltop = xmlRoot(papers) # top node of "papers" xml structure
+Article_Num <- xmlSize(xmltop) # number of nodes (Articles) "in papers"
+# xmlSApply(xmltop[[1]], xmlName) # shows names of child nodes
 
-# Remove XML text
-
-# Abstract <- unlist(xpathApply(papers, "//Abstract", saveXML))
-Article <- unlist(xpathApply(papers, "//PubmedArticle", saveXML))
+ID <- vector()
 Abstract <- vector()
-for (i in 1:length(Article)) {
-  Abstract[i] <- sub(".*<Abstract>\n        ", "", Article[i])
-  Abstract[i] <- sub("\n      </Abstract>\n.*", "", Abstract[i])
-  # Abstract[i] <- substr(Abstract[i], 14, nchar(Abstract[i]) - 12)
-  Abstract[i] <- sub("<CopyrightInformation>.*</CopyrightInformation>", "", Abstract[i])
-  if (startsWith(Abstract[i], "<AbstractText>")) {
-    Abstract[i] <- substr(Abstract[i], 15, nchar(Abstract[i]) - 18)
-  } else {
-    Abstract[i] <- str_replace_all(Abstract[i], "<AbstractText.*\">", "")
-    Abstract[i] <- gsub("</AbstractText>\n       ","",Abstract[i])
-  }
+Title <- vector()
+Date <- vector()
+Author_lastname <- vector()
+Author_forename <- vector()
+Author <- vector()
+
+for (i in 1:Article_Num) {
+  ID[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["PMID"]])
+  Abstract[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["Article"]][["Abstract"]])
+  Title[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["Article"]][["ArticleTitle"]])
+  Date[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["Article"]][["ArticleDate"]])
+  Author_lastname[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["Article"]][["AuthorList"]][["Author"]][["LastName"]])
+  Author_forename[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["Article"]][["AuthorList"]][["Author"]][["ForeName"]])
+  Author[i] <- paste(Author_lastname[i],Author_forename[i])
 }
+
+# create dataframe
+df <- data.frame(ID, Abstract, Title, Date, Author)
+df <- df[complete.cases(df[ , 2]),] # eliminate NA's in the Abstract column
+
+
+## Abstract processing
+Abstract <- as.character(df$Abstract[1:100])
 
 # Remove too long or too short Abstracts
 for (i in 1:length(Abstract)) {
@@ -43,7 +56,7 @@ for (i in 1:length(Abstract)) {
 }
 Abstract<-Abstract[Abstract!=""]
 
-#Just to visualyse abstract lengths
+#Just to visualize abstract lengths
 a<- vector()
 for (i in 1:length(Abstract)) {a[i]<-nchar(Abstract[i])}
 plot(a)
