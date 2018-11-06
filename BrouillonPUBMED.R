@@ -5,7 +5,7 @@ library(ggplot2)
 ############### PART 1: Information extraction ###############
 
 ## Dataset importation
-#--------------------
+#---------------------
 # Option 1: 698 documents via une requete
 #----------
 Querry_String <- "AIDS"
@@ -18,6 +18,7 @@ papers <- fetch_pubmed_data(Ids)
 
 
 ## Information Extraction from dataset ("papers")
+#------------------------------------------------
 xmltop = xmlRoot(papers) # top node of "papers" xml structure
 Article_Num <- xmlSize(xmltop) # number of nodes (Articles) "in papers"
 # xmlSApply(xmltop[[1]], xmlName) # shows names of child nodes
@@ -42,24 +43,19 @@ for (i in 1:Article_Num) {
 
 # create dataframe
 df <- data.frame(ID, Abstract, Title, Date, Author)
-df <- df[complete.cases(df[ , 2]),] # eliminate NA's in the Abstract column
-
-
-## Abstract processing
-Abstract <- as.character(df$Abstract[1:100])
-
-# Remove too long or too short Abstracts
-for (i in 1:length(Abstract)) {
-  if (nchar(Abstract[i])<100 || nchar(Abstract[i])>4000) {
-    Abstract[i]<- ""
-  }
-}
-Abstract<-Abstract[Abstract!=""]
+# Remove Na's and too long or too short Abstracts.
+df <- df[complete.cases(df[ , 2]),] 
+df <- df[nchar(as.character(df[ , 2]))<3000 & nchar(as.character(df[ , 2]))>100,] 
 
 #Just to visualize abstract lengths
 a<- vector()
-for (i in 1:length(Abstract)) {a[i]<-nchar(Abstract[i])}
+for (i in 1:length(df$Abstract)) {a[i]<-nchar(as.character(df$Abstract[i]))}
 plot(a)
+
+Abstract <- as.character(df$Abstract)
+
+
+
 
 
 ############### PART 2: text mining
