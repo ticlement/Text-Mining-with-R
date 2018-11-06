@@ -47,30 +47,25 @@ df <- data.frame(ID, Abstract, Title, Date, Author)
 df <- df[complete.cases(df[ , 2]),] 
 df <- df[nchar(as.character(df[ , 2]))<3000 & nchar(as.character(df[ , 2]))>100,] 
 
-#Just to visualize abstract lengths
+# visualize abstract lengths
 a<- vector()
 for (i in 1:length(df$Abstract)) {a[i]<-nchar(as.character(df$Abstract[i]))}
 plot(a)
 
-Abstract <- as.character(df$Abstract)
 
 
+############### PART 2: text mining  ###############
 
-
-
-############### PART 2: text mining
-
-# Approche Bag of words:
-NbrDoc<-100
-raw <- Abstract
-# print(raw)
-
+## Approche Bag of words:
 library(quanteda)
 
+Abstract <- as.character(df$Abstract)
+NbrDoc<-100
+
 # Tokenize
-tokens <- tokens(raw, what = "word", 
-                       remove_numbers = TRUE, remove_punct = TRUE,
-                       remove_symbols = TRUE, remove_hyphens = FALSE)
+tokens <- tokens(Abstract, what = "word", 
+                 remove_numbers = TRUE, remove_punct = TRUE,
+                 remove_symbols = TRUE, remove_hyphens = FALSE)
 
 # for bigrams.
 # test.tokens <- tokens_ngrams(test.tokens, n = 1:2)
@@ -80,7 +75,7 @@ tokens <- tokens_tolower(tokens)
 
 # stopwords
 stop<-stopwords()
-new_stopwords<-append(stop,c("fig.","eq.","abstracttext","e.g"))
+new_stopwords<-append(stop,c("fig.","eq.","e.g"))
 tokens <- tokens_select(tokens, new_stopwords, selection = "remove")
 tokens <- tokens_select(tokens,min_nchar = 2, selection ="keep")
 
@@ -89,7 +84,7 @@ tokens <- tokens_select(tokens,min_nchar = 2, selection ="keep")
 # print(tokens)
 
 # Create our first bag-of-words model.
-tokens.dfm <- dfm(tokens, tolower = FALSE)
+tokens.dfm <- dfm(tokens, tolower = TRUE)
 
 # Transform to a matrix and inspect.
 tokens.matrix <- as.matrix(tokens.dfm)
@@ -156,7 +151,7 @@ tokens.tfidf <- t(tokens.tfidf)
 
 # Check for incopmlete cases.
 incomplete.cases <- which(!complete.cases(tokens.tfidf))
-# raw[incomplete.cases]
+# Abstract[incomplete.cases]
 
 # Fix incomplete cases
 tokens.tfidf[incomplete.cases,] <- rep(0.0, ncol(tokens.tfidf))
