@@ -196,6 +196,21 @@ eig3<-irlba$v[,3]
 # library(car) # faut aussi installer lib("rgl")
 # # 3D plot with the regression plane
 # scatter3d(x = eig1, y = eig2, z = eig3)
+# topics Visualization
+Topics <- vector(length = dim(irlba$u)[1])
+TopicsWords <- matrix("txt",nrow = 10, ncol = dim(irlba$u)[2])
+ColTag <- vector(length = dim(irlba$u)[2])
+for (i in (1:dim(irlba$u)[2])) {
+  # sort tokens in each dimension (to find the most relevant words in each topic)
+  Topics <- irlba$u[,i]
+  names(Topics) <- row.names(tokens.df)
+  Topics <- Topics[order(-Topics),drop=FALSE]
+  # build the table with words
+  TopicsWords[,i] <- names(Topics[1:10])
+  ColTag[i] = paste('Topic ',i)
+}
+colnames(TopicsWords) <- ColTag
+View(TopicsWords)
 
 ################ Querries (based on SVD) ###################
 #-----------------------------------------------------------
