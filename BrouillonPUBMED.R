@@ -84,7 +84,7 @@ tokens <- tokens_select(tokens,min_nchar = 2, selection ="keep")
 # print(tokens)
 
 # Create our first bag-of-words model.
-tokens.dfm <- dfm(tokens, tolower = TRUE)
+tokens.dfm <- dfm(tokens)
 
 # Transform to a matrix and inspect.
 tokens.matrix <- as.matrix(tokens.dfm)
@@ -121,7 +121,6 @@ term.frequency <- function(row) {
 inverse.doc.freq <- function(col) {
   corpus.size <- length(col)
   doc.count <- length(which(col > 0))
-  
   log10(corpus.size / doc.count)
 }
 
@@ -132,8 +131,6 @@ tf.idf <- function(x, idf) {
 
 # First step, normalize all documents via TF.
 tokens.df <- apply(tokens.matrix, 1, term.frequency)
-# dim(tokens.df)
-# View(tokens.df[1:100, 1:NbrDoc])
 
 # Second step, calculate the IDF vector that we will use - both
 tokens.idf <- apply(tokens.matrix, 2, inverse.doc.freq)
@@ -141,13 +138,10 @@ str(tokens.idf)
 
 # Lastly, calculate TF-IDF for our training corpus.
 tokens.tfidf <-  apply(tokens.df, 2, tf.idf, idf = tokens.idf)
-# dim(tokens.tfidf)
-# View(tokens.tfidf[1:25, 1:NbrDoc])
+
 
 # Transpose the matrix
 tokens.tfidf <- t(tokens.tfidf)
-# dim(tokens.tfidf)
-# View(tokens.tfidf[1:NbrDoc, 1:25])
 
 # Check for incopmlete cases.
 incomplete.cases <- which(!complete.cases(tokens.tfidf))
@@ -161,6 +155,7 @@ tokens.tfidf[incomplete.cases,] <- rep(0.0, ncol(tokens.tfidf))
 # Make a clean data frame.
 tokens.tfidf.df <- data.frame(tokens.tfidf)
 names(tokens.tfidf.df) <- make.names(names(tokens.tfidf.df))
+
 
 library(irlba)
 
