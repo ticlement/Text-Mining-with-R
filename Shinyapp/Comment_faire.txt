@@ -4,5 +4,8 @@ pour faire tourner l'aplication il faut installer la librairie Shiny.
 puis sur Rstudio:
         > library(shiny)
         > runApp("~/Desktop/Shinyapp")
+ ^
+/!\ : pas oublier de modifier le path: "~/Desktop/Shinyapp" 
+```
 
 Documentation: http://rstudio.github.io/shiny/tutorial/#welcome
