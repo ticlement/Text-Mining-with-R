@@ -14,8 +14,11 @@ shinyUI(pageWithSidebar(
   # when inputs change). This is useful if the computations required
   # to render output are inordinately time-consuming.
   sidebarPanel(
-    selectInput("dataset", "Choose a dataset:", 
-                choices = c("rock", "pressure", "cars")),
+    
+    textInput("text","Search:"),
+    
+    selectInput("dataset", "Format:", 
+                choices = c("Abstracts", "Authors", "Dates")),
     
     numericInput("obs", "Number of observations to view:", 10),
     
