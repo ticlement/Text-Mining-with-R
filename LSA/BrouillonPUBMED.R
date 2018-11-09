@@ -212,8 +212,8 @@ for (i in (1:dim(irlba$u)[2])) {
 colnames(TopicsWords) <- ColTag
 View(TopicsWords)
 
-################ Querries (based on SVD) ###################
-#-----------------------------------------------------------
+############### Querries (based on SVD) ###############
+#------------------------------------------------------
 
 # give a positive querry: as a vector of strings ('querry','querry',...)
 posQuerry_String <- c('vaccine','test')
@@ -298,7 +298,7 @@ for (i in (1:10)) {
 }
 View(Result)
 
-# Clustering
+# Clustering ?
 #--------------
 # res <- kmeans(irlba$v,centers = 2)
 # plot(irlba$v,col = res$cluster , pch = res$cluster)

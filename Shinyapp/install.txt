@@ -1,0 +1,8 @@
+pour faire tourner l'aplication il faut installer la librairie Shiny.
+        > install.packages("shiny")
+
+puis sur Rstudio:
+        > library(shiny)
+        > runApp("~/Desktop/Shinyapp")
+
+Documentation: http://rstudio.github.io/shiny/tutorial/#welcome
