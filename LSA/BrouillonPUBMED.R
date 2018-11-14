@@ -8,13 +8,13 @@ library(ggplot2)
 #---------------------
 # Option 1: 698 documents via une requete
 #----------
-Querry_String <- "AIDS"
-Ids <- get_pubmed_ids(Querry_String)
-papers <- fetch_pubmed_data(Ids)
+# Querry_String <- "AIDS"
+# Ids <- get_pubmed_ids(Querry_String)
+# papers <- fetch_pubmed_data(Ids)
 
 # Option 2: 52349 documents via importation du fichier xml.
 #----------
-# papers <- xmlParse(file = "/home/francois/Documents/Projet_Text_mining/pubmed18n0924.xml")
+papers <- xmlParse(file = "pubmed18n0924.xml")
 
 
 ## Information Extraction from dataset ("papers")
@@ -72,7 +72,8 @@ library(quanteda)
 
 Abstract <- as.character(df$Abstract)
 
-NbrDoc<-100
+NbrDoc<-5000
+Abstract <- Abstract[1:NbrDoc]
 
 # Tokenize
 tokens <- tokens(Abstract, what = "word", 
@@ -103,20 +104,26 @@ tokens.dfm <- dfm(tokens)
 # tokens.matrix <- as.matrix(tokens.dfm)
 
 isValue <- tokens.dfm != 0
+iValue <- rowSums(isValue)
 isparse <- vector(length = sum(isValue))
-jsparse <- vector(length = sum(isValue))
-Data <- vector(length = sum(isValue))
 k <- 1
-for (i in (1:dim(tokens.dfm)[1])) {
-  for (j in (1:dim(tokens.dfm)[2])) {
-    if (isValue[i,j] == 1){
-      isparse[k] <- i
-      jsparse[k] <- j
-      Data[k] <- tokens.dfm[i,j]
-      k <- k + 1
-    }
-  }
+for (i in (1:dim(tokens.dfm)[1])){
+  l <- k + iValue[i] -1
+  isparse[k:l] <- i
+  k <- k + iValue[i]
 }
+
+jValue <- colSums(isValue)
+jsparse <- vector(length = sum(isValue))
+k <- 1
+for (i in (1:dim(tokens.dfm)[2])){
+  l <- k + jValue[i] -1
+  jsparse[k:l] <- i
+  k <- k + jValue[i]
+}
+
+Data <- tokens.dfm[isValue]
+
 sparseTokens <- sparseMatrix(isparse,jsparse,x=Data)
 
 # Tokenfrequence visualizations
@@ -231,10 +238,7 @@ eig3<-irlba$v[,3]
 # # 3D plot with the regression plane
 # scatter3d(x = eig1, y = eig2, z = eig3)
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 028ebe8d1325e8f342f64c195b786eef2e33d56e
 # topics Visualization
 Topics <- vector(length = dim(irlba$u)[1])
 TopicsWords <- matrix("txt",nrow = 10, ncol = dim(irlba$u)[2])
