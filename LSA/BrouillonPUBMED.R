@@ -72,7 +72,7 @@ library(quanteda)
 
 Abstract <- as.character(df$Abstract)
 
-NbrDoc<-5000
+NbrDoc<-10000
 Abstract <- Abstract[1:NbrDoc]
 
 # Tokenize
@@ -97,12 +97,12 @@ tokens <- tokens_select(tokens,min_nchar = 3, selection ="keep")
 # print(tokens)
 
 # Create our first bag-of-words model dataframe.
-tokens <- tokens[1:(length(tokens)/2)]
+# tokens <- tokens[1:(length(tokens)/2)]
 tokens.dfm <- dfm(tokens)
 
 # Transform to a matrix and inspect.
 # tokens.matrix <- as.matrix(tokens.dfm)
-
+library(Matrix)
 isValue <- tokens.dfm != 0
 iValue <- rowSums(isValue)
 isparse <- vector(length = sum(isValue))
