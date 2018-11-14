@@ -60,7 +60,7 @@ plot(a)
 library(quanteda)
 
 Abstract <- as.character(df$Abstract)
-NbrDoc<-5000
+NbrDoc<-1000
 Abstract <- Abstract[1:NbrDoc]
 
 # Tokenize
