@@ -8,13 +8,13 @@ library(ggplot2)
 #---------------------
 # Option 1: 698 documents via une requete
 #----------
-# Querry_String <- "AIDS"
-# Ids <- get_pubmed_ids(Querry_String)
-# papers <- fetch_pubmed_data(Ids)
+Querry_String <- "AIDS"
+Ids <- get_pubmed_ids(Querry_String)
+papers <- fetch_pubmed_data(Ids)
 
 # Option 2: 52349 documents via importation du fichier xml.
 #----------
-papers <- xmlParse(file = "pubmed18n0924.xml")
+# papers <- xmlParse(file = "/home/francois/Documents/Projet_Text_mining/pubmed18n0924.xml")
 
 
 ## Information Extraction from dataset ("papers")
@@ -41,8 +41,17 @@ for (i in 1:Article_Num) {
   Author[i] <- paste(Author_lastname[i],Author_forename[i])
 }
 
+rm(papers)
+
 # create dataframe
 df <- data.frame(ID, Abstract, Title, Date, Author)
+rm(ID, Abstract, Title, Date, Author, Author_forename, Author_lastname)
+# export dataframe
+# saveRDS(df, file = "Dataframe", ascii = FALSE, version = NULL,
+#         compress = TRUE, refhook = NULL)
+
+
+
 # Remove Na's and too long or too short Abstracts.
 df <- df[complete.cases(df[ , 2]),] 
 df <- df[nchar(as.character(df[ , 2]))<3000 & nchar(as.character(df[ , 2]))>100,] 
@@ -51,17 +60,19 @@ df <- df[nchar(as.character(df[ , 2]))<3000 & nchar(as.character(df[ , 2]))>100,
 a<- vector()
 for (i in 1:length(df$Abstract)) {a[i]<-nchar(as.character(df$Abstract[i]))}
 plot(a)
-
+rm(a)
 
 
 ############### PART 2: text mining  ###############
 
-## Approche Bag of words:
+## Bag of words approach:
+#------------------------
+
 library(quanteda)
 
 Abstract <- as.character(df$Abstract)
-NbrDoc<-1000
-Abstract <- Abstract[1:NbrDoc]
+
+NbrDoc<-100
 
 # Tokenize
 tokens <- tokens(Abstract, what = "word", 
@@ -74,17 +85,18 @@ tokens <- tokens(Abstract, what = "word",
 # minimize capital letters
 tokens <- tokens_tolower(tokens)
 
-# stopwords
+# Stopwords
 stop<-stopwords()
 new_stopwords<-append(stop,c("fig.","eq.","e.g"))
 tokens <- tokens_select(tokens, new_stopwords, selection = "remove")
 tokens <- tokens_select(tokens,min_nchar = 3, selection ="keep")
 
-# stem
+# Steming
 # tokens <- tokens_wordstem(tokens, language = "english")
 # print(tokens)
 
-# Create our first bag-of-words model.
+# Create our first bag-of-words model dataframe.
+tokens <- tokens[1:(length(tokens)/2)]
 tokens.dfm <- dfm(tokens)
 
 # Transform to a matrix and inspect.
@@ -107,7 +119,7 @@ for (i in (1:dim(tokens.dfm)[1])) {
 }
 sparseTokens <- sparseMatrix(isparse,jsparse,x=Data)
 
-# Tokenfrequence
+# Tokenfrequence visualizations
 # In corpus
 freq <- sort(colSums(tokens.matrix), decreasing=TRUE)
 wf <- data.frame(word=names(freq), freq=freq)
@@ -118,15 +130,24 @@ freqInDoc <- sort(tokens.matrix[Doc,], decreasing=TRUE)
 wfindoc <- data.frame(word=names(freqInDoc), freq=freqInDoc)
 
 # plot word frequence
+# in corpus:
 # pl <- ggplot(subset(wf, freq > 1) ,aes(word, freq))
+
+# in specific doc:
 # # pl <- ggplot(subset(wfindoc, freq > 1) ,aes(word, freq))
+
+# make plot:
 # pl <- pl + geom_bar(stat="identity", fill="darkred", colour="white")
 # pl + theme(axis.text.x=element_text(angle=90, hjust=1)) + ggtitle("Uni-Gram Frequency")
 
-# Word Cloud
+# Word Cloud visualization
 # library(wordcloud)
 # set.seed(100)
 # wordcloud(names(freq), freq, min.freq=2, colors=brewer.pal(6, "Dark2"))
+
+
+## analizing Tokens:
+#-------------------
 
 # Our function for calculating relative term frequency (TF)
 term.frequency <- function(row) {
@@ -144,6 +165,8 @@ inverse.doc.freq <- function(col) {
 tf.idf <- function(x, idf) {
   x * idf
 }
+
+
 
 # First step, normalize all documents via TF.
 tokens.df <- apply(tokens.matrix, 1, term.frequency)
@@ -173,9 +196,11 @@ tokens.tfidf.df <- data.frame(tokens.tfidf)
 names(tokens.tfidf.df) <- make.names(names(tokens.tfidf.df))
 
 
+
+## Perform SVD. Specifically, reduce dimensionality down to 'nv' columns
+#-----------------------------------------------------------------------
 library(irlba)
 
-# Perform SVD. Specifically, reduce dimensionality down to 300 columns
 # for our latent semantic analysis (LSA).
 irlba <- irlba(t(tokens.tfidf), nv = 30, maxit = 1000)
 
@@ -183,16 +208,9 @@ irlba <- irlba(t(tokens.tfidf), nv = 30, maxit = 1000)
 # View(irlba$v)
 
 
-# SVD
-#-----
-# results_SVD<- svd(t(tokens.tfidf))
-# eig1<-results_SVD$u[,1]
-# eig2<-results_SVD$u[,2]
-# eig3<-results_SVD$u[,3]
+## Make plots:
 
-# Make 3D plot
-#----------------
-#atribution de nom de lignes
+# line names
 rownames(irlba$v)<-row.names(tokens.tfidf)
 eig1<-irlba$v[,1]
 eig2<-irlba$v[,2]
@@ -213,6 +231,10 @@ eig3<-irlba$v[,3]
 # # 3D plot with the regression plane
 # scatter3d(x = eig1, y = eig2, z = eig3)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 028ebe8d1325e8f342f64c195b786eef2e33d56e
 # topics Visualization
 Topics <- vector(length = dim(irlba$u)[1])
 TopicsWords <- matrix("txt",nrow = 10, ncol = dim(irlba$u)[2])
