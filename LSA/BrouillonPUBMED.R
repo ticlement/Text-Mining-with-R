@@ -8,13 +8,13 @@ library(ggplot2)
 #---------------------
 # Option 1: 698 documents via une requete
 #----------
-Querry_String <- "AIDS"
-Ids <- get_pubmed_ids(Querry_String)
-papers <- fetch_pubmed_data(Ids)
+# Querry_String <- "AIDS"
+# Ids <- get_pubmed_ids(Querry_String)
+# papers <- fetch_pubmed_data(Ids)
 
 # Option 2: 52349 documents via importation du fichier xml.
 #----------
-# papers <- xmlParse(file = "/home/francois/Documents/Projet_Text_mining/pubmed18n0924.xml")
+papers <- xmlParse(file = "pubmed18n0924.xml")
 
 
 ## Information Extraction from dataset ("papers")
@@ -60,7 +60,8 @@ plot(a)
 library(quanteda)
 
 Abstract <- as.character(df$Abstract)
-NbrDoc<-100
+NbrDoc<-5000
+Abstract <- Abstract[1:NbrDoc]
 
 # Tokenize
 tokens <- tokens(Abstract, what = "word", 
@@ -77,7 +78,7 @@ tokens <- tokens_tolower(tokens)
 stop<-stopwords()
 new_stopwords<-append(stop,c("fig.","eq.","e.g"))
 tokens <- tokens_select(tokens, new_stopwords, selection = "remove")
-tokens <- tokens_select(tokens,min_nchar = 2, selection ="keep")
+tokens <- tokens_select(tokens,min_nchar = 3, selection ="keep")
 
 # stem
 # tokens <- tokens_wordstem(tokens, language = "english")
@@ -87,9 +88,24 @@ tokens <- tokens_select(tokens,min_nchar = 2, selection ="keep")
 tokens.dfm <- dfm(tokens)
 
 # Transform to a matrix and inspect.
-tokens.matrix <- as.matrix(tokens.dfm)
-# View(tokens.matrix[1:NbrDoc, 1:100])
-# dim(tokens.matrix)
+# tokens.matrix <- as.matrix(tokens.dfm)
+
+isValue <- tokens.dfm != 0
+isparse <- vector(length = sum(isValue))
+jsparse <- vector(length = sum(isValue))
+Data <- vector(length = sum(isValue))
+k <- 1
+for (i in (1:dim(tokens.dfm)[1])) {
+  for (j in (1:dim(tokens.dfm)[2])) {
+    if (isValue[i,j] == 1){
+      isparse[k] <- i
+      jsparse[k] <- j
+      Data[k] <- tokens.dfm[i,j]
+      k <- k + 1
+    }
+  }
+}
+sparseTokens <- sparseMatrix(isparse,jsparse,x=Data)
 
 # Tokenfrequence
 # In corpus
@@ -161,7 +177,7 @@ library(irlba)
 
 # Perform SVD. Specifically, reduce dimensionality down to 300 columns
 # for our latent semantic analysis (LSA).
-irlba <- irlba(t(tokens.tfidf), nv = 10, maxit = 1000)
+irlba <- irlba(t(tokens.tfidf), nv = 30, maxit = 1000)
 
 # Take a look at the new feature data up close.
 # View(irlba$v)
@@ -196,6 +212,7 @@ eig3<-irlba$v[,3]
 # library(car) # faut aussi installer lib("rgl")
 # # 3D plot with the regression plane
 # scatter3d(x = eig1, y = eig2, z = eig3)
+
 # topics Visualization
 Topics <- vector(length = dim(irlba$u)[1])
 TopicsWords <- matrix("txt",nrow = 10, ncol = dim(irlba$u)[2])
@@ -211,6 +228,7 @@ for (i in (1:dim(irlba$u)[2])) {
 }
 colnames(TopicsWords) <- ColTag
 View(TopicsWords)
+
 
 ############### Querries (based on SVD) ###############
 #------------------------------------------------------
@@ -259,7 +277,7 @@ posdistMatrix <- matrix(nrow = length(posQuerry_String),ncol=dim(irlba$v)[1])
 posdist <- rep(1,length = dim(irlba$v)[1])
 for (i in (1:length(posQuerry_String))) {
   posdistMatrix[i,] <- euc.dist(irlba$v, eig_posQuerry[i,])
-  posdist <- posdist * posdistMatrix[i,]
+  posdist <- posdist + posdistMatrix[i,]
 }
 
 
@@ -268,9 +286,9 @@ if (negQuerry_String[1] != ""){
   negdist <- rep(1,length = dim(irlba$v)[1])
   for (i in (1:length(negQuerry_String))) {
     negdistMatrix[i,] <- euc.dist(irlba$v, eig_negQuerry[i,])
-    negdist <- negdist * negdistMatrix[i,]
+    negdist <- negdist + negdistMatrix[i,]
   }
-  distMatrix <- posdist / negdist
+  distMatrix <- 0.8*posdist - 0.2*negdist
 }else distMatrix <- posdist
 
 
