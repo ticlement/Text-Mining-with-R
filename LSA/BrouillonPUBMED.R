@@ -240,13 +240,13 @@ rownames(irlba$u) <- row.names(tokens.dfm)
 
 
 # topics Visualization
-Topics <- vector(length = dim(irlba$u)[1])
-TopicsWords <- matrix("txt",nrow = 10, ncol = dim(irlba$u)[2])
-ColTag <- vector(length = dim(irlba$u)[2])
-for (i in (1:dim(irlba$u)[2])) {
+Topics <- vector(length = dim(irlba$v)[1])
+TopicsWords <- matrix("txt",nrow = 10, ncol = dim(irlba$v)[2])
+ColTag <- vector(length = dim(irlba$v)[2])
+for (i in (1:dim(irlba$v)[2])) {
   # sort tokens in each dimension (to find the most relevant words in each topic)
-  Topics <- irlba$u[,i]
-  names(Topics) <- row.names(tokens.df)
+  Topics <- irlba$v[,i]
+  names(Topics) <- row.names(irlba$v)
   Topics <- Topics[order(-Topics),drop=FALSE]
   # build the table with words
   TopicsWords[,i] <- names(Topics[1:10])
@@ -260,22 +260,26 @@ View(TopicsWords)
 #------------------------------------------------------
 
 # give a positive querry: as a vector of strings ('querry','querry',...)
-posQuerry_String <- c('vaccine','test')
+posQuerry_String <- c('cancer')
+flag <- match(posQuerry_String, rownames(irlba$v))
+try(if(is.na(flag) == TRUE) stop("Query not found"))
 # give a negative querry:
-negQuerry_String <- c('eom','cardiac')
+negQuerry_String <- c('pancreatic')
+flag <- match(negQuerry_String, rownames(irlba$v))
+try(if(is.na(flag) == TRUE) stop("Query not found"))
 
 posIndex <- vector(length = length(posQuerry_String))
 for (i in (1:length(posQuerry_String))) {
-  posIndex[i] <- match(posQuerry_String[i], rownames(tokens.dfm))
+  posIndex[i] <- match(posQuerry_String[i], rownames(irlba$v))
 }
-eig_posQuerry <- irlba$u[posIndex,]
+eig_posQuerry <- irlba$v[posIndex,]
 
 if (length(negQuerry_String)>1 | negQuerry_String != ''){
   negIndex <- vector(length = length(negQuerry_String))
   for (i in (1:length(negQuerry_String))) {
-    negIndex[i] <- match(negQuerry_String[i], rownames(tokens.dfm))
+    negIndex[i] <- match(negQuerry_String[i], rownames(irlba$v))
   }
-  eig_negQuerry <- irlba$u[negIndex,]
+  eig_negQuerry <- irlba$v[negIndex,]
 }
 
 # 
@@ -299,46 +303,47 @@ euc.dist <- function(docs,querry){
   return(euc.dist)
 }
 # Calculate distance, order and name the rows
-posdistMatrix <- matrix(nrow = length(posQuerry_String),ncol=dim(irlba$v)[1])
-posdist <- rep(1,length = dim(irlba$v)[1])
-for (i in (1:length(posQuerry_String))) {
-  posdistMatrix[i,] <- euc.dist(irlba$v, eig_posQuerry[i,])
-  posdist <- posdist + posdistMatrix[i,]
-}
-
+posdistMatrix <- matrix(nrow = length(posQuerry_String),ncol=dim(irlba$u)[1])
+posdist <- rep(1,length = dim(irlba$u)[1])
+if (length(posQuerry_String) > 1){
+  for (i in (1:length(posQuerry_String))) {
+    posdistMatrix[i,] <- euc.dist(irlba$u, eig_posQuerry[i,])
+    posdist <- posdist + posdistMatrix[i,]
+  }
+}else{posdist <- euc.dist(irlba$u, eig_posQuerry)}
 
 if (negQuerry_String[1] != ""){
-  negdistMatrix <- matrix(1L,nrow = length(negQuerry_String),ncol=dim(irlba$v)[1])
-  negdist <- rep(1,length = dim(irlba$v)[1])
-  for (i in (1:length(negQuerry_String))) {
-    negdistMatrix[i,] <- euc.dist(irlba$v, eig_negQuerry[i,])
-    negdist <- negdist + negdistMatrix[i,]
-  }
+  negdistMatrix <- matrix(1L,nrow = length(negQuerry_String),ncol=dim(irlba$u)[1])
+  negdist <- rep(1,length = dim(irlba$u)[1])
+  if (length(negQuerry_String) > 1){
+    for (i in (1:length(negQuerry_String))) {
+      negdistMatrix[i,] <- euc.dist(irlba$u, eig_negQuerry[i,])
+      negdist <- negdist + negdistMatrix[i,]
+    }
+  }else{negdist <- euc.dist(irlba$u, eig_negQuerry)}
   distMatrix <- 0.8*posdist - 0.2*negdist
 }else distMatrix <- posdist
 
-
-distDF <- as.data.frame(distMatrix)
-rownames(distDF)<-row.names(irlba$v)
-distDF <- distDF[order(distDF$distMatrix), ,drop=FALSE]
-
+names(distMatrix) <- rownames(irlba$u)
+distMatrix <- distMatrix[order(distMatrix),drop=FALSE]
 
 
 # Compute 10 most relevant (tf-idf) words in each documents
-bestWords <- function(tokens.tfidf,docId){
-  docTfidf <- tokens.tfidf[docId,]
-  colnames(docTfidf) <- names(tokens.tfidf)
-  docTfidf <- docTfidf[order(-docTfidf),drop=FALSE]
-  return(names(docTfidf[1:10]))
-}
+# bestWords <- function(tokens.tfidf,docId,irlba){
+#   docTfidf <- tokens.tfidf[docId,]
+#   names(docTfidf) <- rownames(irlba$v)
+#   docTfidf <- docTfidf[is.na(docTfidf) == FALSE]
+#   docTfidf <- docTfidf[order(-docTfidf),drop=FALSE]
+#   return(names(docTfidf[1:10]))
+# }
 
 # matrix with 10 most relevant keywords of the 10 nearests documents 
-names <- row.names(distDF)
-Result <- matrix(nrow=10,ncol=10)
-rownames(Result) <- names[1:10]
+names <- names(distMatrix)
+Result <- matrix(nrow = 10,ncol = 10)
+colnames(Result) <- names[1:10]
 for (i in (1:10)) {
   index <- match(names[i],rownames(irlba$v))
-  Result[i,] <- bestWords(tokens.tfidf,index)
+  Result[i,] <- bestWords(tokens.tfidf,index,irlba)
 }
 View(Result)
 
