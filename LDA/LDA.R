@@ -14,7 +14,7 @@ tic("full script")
 
 # 52349 documents via importation du fichier xml.
 
-papers <- xmlParse(file = "/Users/thomasferon/Documents/UCL/pubmed18n0924.xml")
+papers <- xmlParse(file = "~/Documents/Projet_Text_mininig/pubmed18n0924.xml")
 
 # Preprocessing des abstracts
 #---------------------------

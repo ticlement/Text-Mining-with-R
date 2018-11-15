@@ -31,6 +31,7 @@ Author_lastname <- vector()
 Author_forename <- vector()
 Author <- vector()
 
+# info extraction
 for (i in 1:Article_Num) {
   ID[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["PMID"]])
   Abstract[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["Article"]][["Abstract"]])
