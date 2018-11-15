@@ -14,7 +14,7 @@ library(ggplot2)
 
 # Option 2: 52349 documents via importation du fichier xml.
 #----------
-papers <- xmlParse(file = "pubmed18n0924.xml")
+# papers <- xmlParse(file = "pubmed18n0924.xml")
 
 
 ## Information Extraction from dataset ("papers")
@@ -57,10 +57,10 @@ df <- df[complete.cases(df[ , 2]),]
 df <- df[nchar(as.character(df[ , 2]))<3000 & nchar(as.character(df[ , 2]))>100,] 
 
 # visualize abstract lengths
-a<- vector()
-for (i in 1:length(df$Abstract)) {a[i]<-nchar(as.character(df$Abstract[i]))}
-plot(a)
-rm(a)
+# a<- vector()
+# for (i in 1:length(df$Abstract)) {a[i]<-nchar(as.character(df$Abstract[i]))}
+# plot(a)
+# rm(a)
 
 
 ############### PART 2: text mining  ###############
@@ -72,8 +72,8 @@ library(quanteda)
 
 Abstract <- as.character(df$Abstract)
 
-NbrDoc <- 1000
-Abstract <- Abstract[1:NbrDoc]
+# NbrDoc <- 1000
+# Abstract <- Abstract[1:NbrDoc]
 
 # Tokenize
 tokens <- tokens(Abstract, what = "word", 
@@ -93,7 +93,7 @@ tokens <- tokens_select(tokens, new_stopwords, selection = "remove")
 tokens <- tokens_select(tokens,min_nchar = 3, selection ="keep")
 
 # Steming
-# tokens <- tokens_wordstem(tokens, language = "english")
+tokens <- tokens_wordstem(tokens[1,3], language = "english")
 # print(tokens)
 
 # Create our first bag-of-words model dataframe.
@@ -211,11 +211,7 @@ tokens.tfidf <- tf.idf(tokens.tf,tokens.idf)
 library(irlba)
 
 # for our latent semantic analysis (LSA).
-irlba <- irlba(tokens.tfidf, nv = 5, maxit = 1000)
-
-# Take a look at the new feature data up close.
-# View(irlba$v)
-
+irlba <- irlba(tokens.tfidf, nv = 500, maxit = 1000)
 
 ## Make plots:
 
@@ -260,11 +256,13 @@ View(TopicsWords)
 #------------------------------------------------------
 
 # give a positive querry: as a vector of strings ('querry','querry',...)
-posQuerry_String <- c('cancer')
+posQuerry_String <- c('salycilic')
+posQuerry_String <- stemDocument(posQuerry_String)
 flag <- match(posQuerry_String, rownames(irlba$v))
 try(if(is.na(flag) == TRUE) stop("Query not found"))
 # give a negative querry:
 negQuerry_String <- c('pancreatic')
+negQuerry_String <- stemDocument(negQuerry_String)
 flag <- match(negQuerry_String, rownames(irlba$v))
 try(if(is.na(flag) == TRUE) stop("Query not found"))
 
