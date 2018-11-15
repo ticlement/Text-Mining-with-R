@@ -72,7 +72,7 @@ library(quanteda)
 
 Abstract <- as.character(df$Abstract)
 
-NbrDoc<-10000
+NbrDoc <- 1000
 Abstract <- Abstract[1:NbrDoc]
 
 # Tokenize
@@ -126,15 +126,16 @@ Data <- tokens.dfm[isValue]
 
 sparseTokens <- sparseMatrix(isparse,jsparse,x=Data)
 
+tokens.matrix <- sparseTokens
 # Tokenfrequence visualizations
 # In corpus
-freq <- sort(colSums(tokens.matrix), decreasing=TRUE)
-wf <- data.frame(word=names(freq), freq=freq)
-
-# In specific document
-Doc<-5
-freqInDoc <- sort(tokens.matrix[Doc,], decreasing=TRUE)
-wfindoc <- data.frame(word=names(freqInDoc), freq=freqInDoc)
+# freq <- sort(colSums(tokens.matrix), decreasing=TRUE)
+# wf <- data.frame(word=names(freq), freq=freq)
+# 
+# # In specific document
+# Doc<-5
+# freqInDoc <- sort(tokens.matrix[Doc,], decreasing=TRUE)
+# wfindoc <- data.frame(word=names(freqInDoc), freq=freqInDoc)
 
 # plot word frequence
 # in corpus:
@@ -169,38 +170,39 @@ inverse.doc.freq <- function(col) {
 }
 
 # Our function for calculating TF-IDF.
-tf.idf <- function(x, idf) {
-  x * idf
+tf.idf <- function(tf, idf) {
+  tf * idf
 }
 
 
 
 # First step, normalize all documents via TF.
-tokens.df <- apply(tokens.matrix, 1, term.frequency)
+# tokens.df <- apply(tokens.matrix, 1, term.frequency) -> breaks sparse matrix
+tokens.tf <- term.frequency(tokens.matrix)
 
 # Second step, calculate the IDF vector that we will use - both
-tokens.idf <- apply(tokens.matrix, 2, inverse.doc.freq)
-str(tokens.idf)
+# tokens.idf <- apply(tokens.matrix, 2, inverse.doc.freq)
+tokens.idf <- inverse.doc.freq(tokens.matrix)
 
 # Lastly, calculate TF-IDF for our training corpus.
-tokens.tfidf <-  apply(tokens.df, 2, tf.idf, idf = tokens.idf)
-
+# tokens.tfidf <-  apply(tokens.df, 2, tf.idf, idf = tokens.idf)
+tokens.tfidf <- tf.idf(tokens.tf,tokens.idf)
 
 # Transpose the matrix
-tokens.tfidf <- t(tokens.tfidf)
+# tokens.tfidf <- t(tokens.tfidf)
 
 # Check for incopmlete cases.
-incomplete.cases <- which(!complete.cases(tokens.tfidf))
+# incomplete.cases <- which(!complete.cases(tokens.tfidf)) -> doesn't work on sparse matrix
 # Abstract[incomplete.cases]
 
 # Fix incomplete cases
-tokens.tfidf[incomplete.cases,] <- rep(0.0, ncol(tokens.tfidf))
+# tokens.tfidf[incomplete.cases,] <- rep(0.0, ncol(tokens.tfidf))
 # dim(tokens.tfidf)
 # sum(which(!complete.cases(tokens.tfidf)))
 
 # Make a clean data frame.
-tokens.tfidf.df <- data.frame(tokens.tfidf)
-names(tokens.tfidf.df) <- make.names(names(tokens.tfidf.df))
+# tokens.tfidf.df <- as.data.frame(as.matrix(tokens.tfidf))
+# names(tokens.tfidf.df) <- make.names(names(tokens.tfidf.df))
 
 
 
@@ -209,7 +211,7 @@ names(tokens.tfidf.df) <- make.names(names(tokens.tfidf.df))
 library(irlba)
 
 # for our latent semantic analysis (LSA).
-irlba <- irlba(t(tokens.tfidf), nv = 30, maxit = 1000)
+irlba <- irlba(tokens.tfidf, nv = 5, maxit = 1000)
 
 # Take a look at the new feature data up close.
 # View(irlba$v)
@@ -218,10 +220,8 @@ irlba <- irlba(t(tokens.tfidf), nv = 30, maxit = 1000)
 ## Make plots:
 
 # line names
-rownames(irlba$v)<-row.names(tokens.tfidf)
-eig1<-irlba$v[,1]
-eig2<-irlba$v[,2]
-eig3<-irlba$v[,3]
+rownames(irlba$v) <- colnames(tokens.dfm)
+rownames(irlba$u) <- row.names(tokens.dfm)
 
 # 2D Plot:
 # plot(eig1,eig2,col="blue")
@@ -266,14 +266,14 @@ negQuerry_String <- c('eom','cardiac')
 
 posIndex <- vector(length = length(posQuerry_String))
 for (i in (1:length(posQuerry_String))) {
-  posIndex[i] <- match(posQuerry_String[i], rownames(tokens.df))
+  posIndex[i] <- match(posQuerry_String[i], rownames(tokens.dfm))
 }
 eig_posQuerry <- irlba$u[posIndex,]
 
 if (length(negQuerry_String)>1 | negQuerry_String != ''){
   negIndex <- vector(length = length(negQuerry_String))
   for (i in (1:length(negQuerry_String))) {
-    negIndex[i] <- match(negQuerry_String[i], rownames(tokens.df))
+    negIndex[i] <- match(negQuerry_String[i], rownames(tokens.dfm))
   }
   eig_negQuerry <- irlba$u[negIndex,]
 }
