@@ -163,7 +163,7 @@ View(TopicsWords)
 #------------------------------------------------------
 
 # give a positive query: as a vector of strings ('querry','querry',...)
-posQuerry_String <- c('cancer','pancreatic')
+posQuerry_String <- c('breast')
 # posQuerry_String <- stemDocument(posQuerry_String) # IF STEMMING
 flag <- match(posQuerry_String, rownames(irlba$v))
 try(if(sum(is.na(flag)) > 0) stop("Query not found"))
@@ -228,4 +228,9 @@ if (negQuerry_String[1] != ""){
 names(distMatrix) <- rownames(irlba$u)
 distMatrix <- distMatrix[order(distMatrix),drop=FALSE]
 
-head(distMatrix)
+Result <- names(distMatrix)
+Result <- gsub(pattern = 'text',replacement = '',x = Result)
+for (i in (1:10)) {
+  num <- as.numeric(Result[i])
+  cat("Result",i,"\n","Abstract",num,"\n",Abstract[num],"\n")
+}
