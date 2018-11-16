@@ -14,7 +14,7 @@ library(ggplot2)
 
 # Option 2: 52349 documents via importation du fichier xml.
 #----------
-papers <- xmlParse(file = "pubmed18n0924.xml")
+papers <- xmlParse(file = "/home/francois/Documents/Projet_Text_mining/pubmed18n0924.xml")
 
 
 ## Information Extraction from dataset ("papers")
@@ -214,6 +214,8 @@ library(irlba)
 # for our latent semantic analysis (LSA).
 irlba <- irlba(tokens.tfidf, nv = 5, maxit = 1000)
 
+
+
 # Take a look at the new feature data up close.
 # View(irlba$v)
 
@@ -224,21 +226,8 @@ irlba <- irlba(tokens.tfidf, nv = 5, maxit = 1000)
 rownames(irlba$v) <- colnames(tokens.dfm)
 rownames(irlba$u) <- row.names(tokens.dfm)
 
-# 2D Plot:
-# plot(eig1,eig2,col="blue")
-# text(eig1,eig2,row.names(irlba$v), cex=0.6, pos=4, col="red")
-
-# 3D Plot:
-# library("scatterplot3d")
-
-# s3d<-scatterplot3d(eig1,eig2,eig3, pch = 16, color="steelblue")
-# text(s3d$xyz.convert(eig1,eig2,eig3), labels = rownames(irlba$v),
-#      cex= 0.7, col = "red")
-
-# library(car) # faut aussi installer lib("rgl")
-# # 3D plot with the regression plane
-# scatter3d(x = eig1, y = eig2, z = eig3)
-
+# saveRDS(irlba, file = "irlba", ascii = FALSE, version = NULL,
+#         compress = TRUE, refhook = NULL)
 
 # topics Visualization
 Topics <- vector(length = dim(irlba$v)[1])

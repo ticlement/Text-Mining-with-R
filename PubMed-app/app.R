@@ -127,6 +127,7 @@ server <- function(input, output) {
     print(tot_text)
     # print(Abstract[head(tot_text,10)])
     
+    #------------------------------------------
     output$chosen_id <- renderText({ 
       paste("Text ID:", df[tot_text[1],1])
     })
@@ -143,22 +144,7 @@ server <- function(input, output) {
       paste("Author:", df[tot_text[1],5])
     })
     
-
   })
-  
-  
-  #   output$table <- renderTable({c(
-  #     paste("Title:", df[input$num,3]),
-  #     paste("Abstract:", df[input$num,2]),
-  #     paste("Author:", df[input$num,5]),
-  #     paste("Published on:", df[input$num,4]),
-  #     paste("Text ID:", df[input$num,1]))
-  #   })
-  
-  
-  # output$chosen_id <- renderText({ 
-  #   paste("Text ID:", df[input$num,1])
-  # })
   
   
   
@@ -168,5 +154,5 @@ shinyApp(ui = ui, server = server)
 
 
 
-# 30423056
-# 30362422
+
+
