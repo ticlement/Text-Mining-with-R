@@ -1,6 +1,7 @@
 library(XML)
 library(easyPubMed)
 library(ggplot2)
+library(bigmemory)
 
 ############### PART 1: Information extraction ###############
 
@@ -14,7 +15,7 @@ library(ggplot2)
 
 # Option 2: 52349 documents via importation du fichier xml.
 #----------
-# papers <- xmlParse(file = "pubmed18n0924.xml")
+papers <- xmlParse(file = "pubmed18n0924.xml")
 
 
 ## Information Extraction from dataset ("papers")
@@ -31,6 +32,7 @@ Author_lastname <- vector()
 Author_forename <- vector()
 Author <- vector()
 
+ptm <- proc.time()
 # info extraction
 for (i in 1:Article_Num) {
   ID[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["PMID"]])
@@ -41,7 +43,7 @@ for (i in 1:Article_Num) {
   Author_forename[i] <- xmlValue(xmltop[[i]][["MedlineCitation"]][["Article"]][["AuthorList"]][["Author"]][["ForeName"]])
   Author[i] <- paste(Author_lastname[i],Author_forename[i])
 }
-
+proc.time() - ptm
 rm(papers)
 
 # create dataframe
@@ -73,7 +75,7 @@ library(quanteda)
 
 Abstract <- as.character(df$Abstract)
 
-# NbrDoc <- 1000
+# NbrDoc <- 10000
 # Abstract <- Abstract[1:NbrDoc]
 
 # Tokenize
@@ -94,40 +96,42 @@ tokens <- tokens_select(tokens, new_stopwords, selection = "remove")
 tokens <- tokens_select(tokens,min_nchar = 3, selection ="keep")
 
 # Steming
-tokens <- tokens_wordstem(tokens[1,3], language = "english")
+# tokens <- tokens_wordstem(tokens[1,3], language = "english")
 # print(tokens)
 
 # Create our first bag-of-words model dataframe.
 # tokens <- tokens[1:(length(tokens)/2)]
 tokens.dfm <- dfm(tokens)
-
+tokens.matrix <- tokens.dfm
 # Transform to a matrix and inspect.
-# tokens.matrix <- as.matrix(tokens.dfm)
-library(Matrix)
-isValue <- tokens.dfm != 0
-iValue <- rowSums(isValue)
-isparse <- vector(length = sum(isValue))
-k <- 1
-for (i in (1:dim(tokens.dfm)[1])){
-  l <- k + iValue[i] -1
-  isparse[k:l] <- i
-  k <- k + iValue[i]
-}
-
-jValue <- colSums(isValue)
-jsparse <- vector(length = sum(isValue))
-k <- 1
-for (i in (1:dim(tokens.dfm)[2])){
-  l <- k + jValue[i] -1
-  jsparse[k:l] <- i
-  k <- k + jValue[i]
-}
-
-Data <- tokens.dfm[isValue]
-
-sparseTokens <- sparseMatrix(isparse,jsparse,x=Data)
-
-tokens.matrix <- sparseTokens
+# tokens.matrix <- big.matrix(tokens.dfm) --> 14.5 Go (no stem)
+# library(Matrix)
+# isValue <- tokens.dfm != 0
+# iValue <- rowSums(isValue)
+# isparse <- vector(length = sum(isValue))
+# k <- 1
+# for (i in (1:dim(tokens.dfm)[1])){
+#   l <- k + iValue[i] -1
+#   isparse[k:l] <- i
+#   k <- k + iValue[i]
+# }
+# 
+# jValue <- colSums(isValue)
+# jsparse <- vector(length = sum(isValue))
+# k <- 1
+# for (i in (1:dim(tokens.dfm)[2])){
+#   l <- k + jValue[i] -1
+#   jsparse[k:l] <- i
+#   k <- k + jValue[i]
+# }
+# 
+# indcs = which(isValue == TRUE)
+# Data <- tokens.dfm[indcs, , drop=F]
+# Data <- as.big.matrix(tokens.dfm[isValue])
+# 
+# sparseTokens <- sparseMatrix(isparse,jsparse,x=Data)
+# 
+# tokens.matrix <- sparseTokens
 # Tokenfrequence visualizations
 # In corpus
 # freq <- sort(colSums(tokens.matrix), decreasing=TRUE)
@@ -176,9 +180,8 @@ tf.idf <- function(tf, idf) {
 }
 
 
-
 # First step, normalize all documents via TF.
-# tokens.df <- apply(tokens.matrix, 1, term.frequency) -> breaks sparse matrix
+# tokens.df <- apply(tokens.matrix, 1, term.frequency) # -> breaks sparse matrix
 tokens.tf <- term.frequency(tokens.matrix)
 
 # Second step, calculate the IDF vector that we will use - both
@@ -209,11 +212,12 @@ tokens.tfidf <- tf.idf(tokens.tf,tokens.idf)
 
 ## Perform SVD. Specifically, reduce dimensionality down to 'nv' columns
 #-----------------------------------------------------------------------
+ptm <- proc.time()
 library(irlba)
 
 # for our latent semantic analysis (LSA).
-irlba <- irlba(tokens.tfidf, nv = 500, maxit = 1000)
-
+irlba <- irlba(tokens.tfidf, nv = 100, maxit = 1000)
+proc.time() - ptm
 ## Make plots:
 
 # line names
@@ -238,7 +242,7 @@ rownames(irlba$u) <- row.names(tokens.dfm)
 
 # topics Visualization
 Topics <- vector(length = dim(irlba$v)[1])
-TopicsWords <- matrix("txt",nrow = 10, ncol = dim(irlba$v)[2])
+TopicsWords <- matrix("txt",nrow = 50, ncol = dim(irlba$v)[2])
 ColTag <- vector(length = dim(irlba$v)[2])
 for (i in (1:dim(irlba$v)[2])) {
   # sort tokens in each dimension (to find the most relevant words in each topic)
@@ -246,7 +250,7 @@ for (i in (1:dim(irlba$v)[2])) {
   names(Topics) <- row.names(irlba$v)
   Topics <- Topics[order(-Topics),drop=FALSE]
   # build the table with words
-  TopicsWords[,i] <- names(Topics[1:10])
+  TopicsWords[,i] <- names(Topics[1:50])
   ColTag[i] = paste('Topic ',i)
 }
 colnames(TopicsWords) <- ColTag
@@ -257,7 +261,7 @@ View(TopicsWords)
 #------------------------------------------------------
 
 # give a positive querry: as a vector of strings ('querry','querry',...)
-posQuerry_String <- c('salycilic')
+posQuerry_String <- c('cancer')
 posQuerry_String <- stemDocument(posQuerry_String)
 flag <- match(posQuerry_String, rownames(irlba$v))
 try(if(is.na(flag) == TRUE) stop("Query not found"))
@@ -326,25 +330,26 @@ if (negQuerry_String[1] != ""){
 names(distMatrix) <- rownames(irlba$u)
 distMatrix <- distMatrix[order(distMatrix),drop=FALSE]
 
+head(distMatrix)
 
 # Compute 10 most relevant (tf-idf) words in each documents
 # bestWords <- function(tokens.tfidf,docId,irlba){
 #   docTfidf <- tokens.tfidf[docId,]
 #   names(docTfidf) <- rownames(irlba$v)
-#   docTfidf <- docTfidf[is.na(docTfidf) == FALSE]
+#   # docTfidf <- docTfidf[is.na(docTfidf) == FALSE]
 #   docTfidf <- docTfidf[order(-docTfidf),drop=FALSE]
 #   return(names(docTfidf[1:10]))
 # }
-
-# matrix with 10 most relevant keywords of the 10 nearests documents 
-names <- names(distMatrix)
-Result <- matrix(nrow = 10,ncol = 10)
-colnames(Result) <- names[1:10]
-for (i in (1:10)) {
-  index <- match(names[i],rownames(irlba$v))
-  Result[i,] <- bestWords(tokens.tfidf,index,irlba)
-}
-View(Result)
+# 
+# # matrix with 10 most relevant keywords of the 10 nearests documents 
+# names <- names(distMatrix)
+# Result <- vector(nrow = 10,ncol = 10)
+# colnames(Result) <- names[1:10]
+# for (i in (1:10)) {
+#   index <- match(names[i],rownames(irlba$v))
+#   Result[i,] <- bestWords(tokens.tfidf,index,irlba)
+# }
+# View(Result)
 
 # Clustering ?
 #--------------
