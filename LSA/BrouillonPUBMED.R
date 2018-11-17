@@ -15,7 +15,7 @@ library(bigmemory)
 
 # Option 2: 52349 documents via importation du fichier xml.
 #----------
-papers <- xmlParse(file = "pubmed18n0924.xml")
+papers <- xmlParse(file = "/home/francois/Documents/Projet_Text_mining/pubmed18n0924.xml")
 
 
 ## Information Extraction from dataset ("papers")
@@ -132,14 +132,23 @@ tokens.tfidf <- tf.idf(tokens.tf,tokens.idf)
 
 ## Perform SVD. Specifically, reduce dimensionality down to 'nv' columns
 #-----------------------------------------------------------------------
-
 library(irlba)
 
-irlba <- irlba(tokens.tfidf, nv = 100, maxit = 1000)
+# for our latent semantic analysis (LSA).
+irlba <- irlba(tokens.tfidf, nv = 5, maxit = 1000)
+# irlba <- irlba(tokens.tfidf, nv = 100, maxit = 1000)
+
+
+# Take a look at the new feature data up close.
+# View(irlba$v)
+
 
 # line names
 rownames(irlba$v) <- colnames(tokens.dfm)
 rownames(irlba$u) <- row.names(tokens.dfm)
+
+# saveRDS(irlba, file = "irlba", ascii = FALSE, version = NULL,
+#         compress = TRUE, refhook = NULL)
 
 # topics Visualization
 
