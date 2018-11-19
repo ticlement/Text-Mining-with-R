@@ -50,7 +50,7 @@ df <- df[nchar(as.character(df[ , 2]))<3000 & nchar(as.character(df[ , 2]))>100,
 ############### PART 2: text mining
 
 Abstract <- as.character(df$Abstract)
-NbrDoc<-10000
+NbrDoc<-length(Abstract)
 raw <- Abstract[1:NbrDoc]
 
 # Tokenize
@@ -84,7 +84,7 @@ ap_topics <- tidy(ap_lda, matrix = "beta")
 
 ap_top_terms <- ap_topics %>%
   group_by(topic) %>%
-  top_n(200, beta) %>%
+  top_n(dim(tokens.matrix)[2], beta) %>%
   ungroup() %>%
   arrange(topic, -beta)
 
